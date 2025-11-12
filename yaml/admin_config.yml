@@ -1,5 +1,6 @@
 webserver:
-  listen_address: "0.0.0.0:8080"
+  listen_addresses:
+    - "0.0.0.0:8080"
   acl:
     - 0.0.0.0/0
   password: badpassword

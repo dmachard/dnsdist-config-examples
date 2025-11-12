@@ -54,14 +54,17 @@ Configuration examples for DNSdist PowerDNS
 
 ## Run config from docker
 
+Choose the YAML configuration file you want to run from the yaml/ folder and copy it to dnsdist.yml in the project root:
+
+```bash
+cp yaml/<example_file>.yml ./dnsdist.yml
+``` 
+> Replace <example_file> with the configuration you want to test, e.g., admin_config.yml.
+
+Then start dnsdist
+
 ```bash
 sudo docker compose up -d
-```
-
-Reload configuration
-
-```bash
-sudo docker compose restart
 ```
 
 Display logs
@@ -80,11 +83,11 @@ Polled security status of version 1.8.0 at startup, no known issues reported: OK
 Testing DNS resolution
 
 ```bash
-dig @127.0.0.1 -p 8053 +tcp google.com
+dig @127.0.0.1 -p 5753 +tcp google.com
 ```
 
 Testing Web console access
 
 ```bash
-curl -u admin:open http://127.0.0.1:8083
+curl -u admin:badpassword http://127.0.0.1:8083
 ```
