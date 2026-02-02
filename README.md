@@ -4,7 +4,7 @@ Configuration examples for DNSdist PowerDNS
 
 **Default configuration provided**:
 
-- Default configuration provided by PowerDNS [LUA](./lua/default_config.lua)
+- Default configuration provided by PowerDNS [YAML](./yaml/default_config.yml) / [LUA](./lua/default_config.lua)
 
 **Administration**:
 
