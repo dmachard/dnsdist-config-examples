@@ -1,0 +1,217 @@
+acl:
+  - "0.0.0.0/0"
+  - "::/0"
+
+binds:
+  - listen_address: "192.168.1.253:53"
+    protocol: "Do53"
+    reuseport: true
+
+  - listen_address: "172.16.0.253:53"
+    protocol: "Do53"
+    reuseport: true
+
+webserver:
+  listen_addresses:
+    - "0.0.0.0:8980"
+  acl:
+    - 0.0.0.0/0
+  password: badpassword
+  api_key: badkey
+  hash_plaintext_credentials: true
+  api_requires_authentication: false
+
+packet_caches:
+  - name: "cache"
+    size: 50000
+
+pools:
+  - name: "default"
+    packet_cache: "cache"
+
+backends:
+  - address: "127.0.0.1:5301"
+    protocol: "Do53"
+    pools:
+      - "default"
+
+remote_logging:
+  dnstap_loggers:
+    - name: "remote_logging"
+      transport: tcp
+      address: "127.0.0.1:6000"
+      connection_count: 1
+
+key_value_stores:
+  cdb:
+    - name: "blocklist_cdb"
+      file_name: /etc/dnsdist/blocklist.cdb
+      refresh_delay: 3600
+  lookup_keys:
+    qname_keys:
+      - name: "lookup_qname"
+        wire_format: false
+
+query_rules:
+  # detected blocked domains
+  # log it through dnstap and spoof answer with localhost ip
+  - name: "search for blacklisted domain from cdb database"
+    selector:
+      type: KeyValueStoreLookup
+      kvs_name: "blocklist_cdb"
+      lookup_key_name: "lookup_qname"
+    action:
+      type: SetTag
+      tag: "policy"
+      value: "blocked"
+
+  - name: "log blocked domains"
+    selector:
+      type: Tag
+      tag: "policy"
+      value: "blocked"
+    action:
+      type: DnstapLog
+      identity: "dnsdist2_blocked"
+      logger_name: "remote_logging"
+
+  - name: "spoof blocking traffic"
+    selector:
+      type: Tag
+      tag: "policy"
+      value: "blocked"
+    action:
+      type: Spoof
+      ips:
+        - "127.0.0.1"
+        - "::1"
+
+  # detect A homelab domain queries from LAN subnet ("192.168.1.0/24")
+  # log it through dnstap and spoof answer with homelab LAN ip
+  - name: "tag A queries from LAN subnet"
+    selector:
+      type: "And"
+      selectors:
+        - type: "NetmaskGroup"
+          netmasks:
+            - "192.168.1.0/24"
+        - type: "QType"
+          qtype: "A"
+        - type: Regex
+          expression: ".*\\.homelab\\.tld"
+    action:
+      type: SetTag
+      tag: "policy"
+      value: "home_ip4"
+
+  - name: "log home taggued queries"
+    selector:
+      type: "Or"
+      selectors:
+        - type: "Tag" 
+          tag: "policy"
+          value: "home_ip4"
+    action:
+      type: DnstapLog
+      identity: "dnsdist2_home"
+      logger_name: "remote_logging"
+
+  - name: "spoof home_ip4 taggued domain queries"
+    selector:
+      type: Tag
+      tag: "policy"
+      value: "home_ip4"
+    action:
+      type: Spoof
+      ips:
+        - "192.168.1.253"
+
+  # detect A homelab domain queries from VPN subnet ("172.16.0.0/12")
+  # log it through dnstap and spoof answer with homelab VPN ip
+  - name: "tag A queries from VPN subnet"
+    selector:
+      type: "And"
+      selectors:
+        - type: "NetmaskGroup"
+          netmasks:
+            - "172.16.0.0/12"
+        - type: "QType"
+          qtype: "A"
+        - type: Regex
+          expression: ".*\\.homelab\\.tld"
+    action:
+      type: SetTag
+      tag: "policy"
+      value: "vpn_ip4"
+
+  - name: "log vpn taggued queries"
+    selector:
+      type: "Or"
+      selectors:
+        - type: "Tag"
+          tag: "policy"
+          value: "vpn_ip4"
+    action:
+      type: DnstapLog
+      identity: "dnsdist2_vpn"
+      logger_name: "remote_logging"
+
+  - name: "spoof vpn_ip4 taggued domain queries"
+    selector:
+      type: Tag
+      tag: "policy"
+      value: "vpn_ip4"
+    action:
+      type: Spoof
+      ips:
+        - "172.16.0.253"
+
+  # handle other queries
+  - name: "tag other queries"
+    selector:
+      type: All
+    action:
+      type: SetTag
+      tag: "policy"
+      value: "other"
+
+  - name: "log other queries"
+    selector:
+      type: "Tag"
+      tag: "policy"
+      value: "other"
+    action:
+      type: DnstapLog
+      identity: "dnsdist2_other"
+      logger_name: "remote_logging"
+
+  - name: "log other queries"
+    selector:
+      type: "Tag"
+      tag: "policy"
+      value: "other" 
+    action:
+      type: Pool
+      pool_name: "default"
+
+response_rules:
+  - name: "log other responses"
+    selector:
+      type: "Tag"
+      tag: "policy"
+      value: "other"
+    action:
+      type: DnstapLog
+      identity: "dnsdist2_other"
+      logger_name: "remote_logging"
+
+cache_hit_response_rules:
+  - name: "log other responses from cache"
+    selector:
+      type: "Tag"
+      tag: "policy"
+      value: "other"    
+    action:
+      type: DnstapLog
+      identity: "dnsdist2_cache"
+      logger_name: "remote_logging"

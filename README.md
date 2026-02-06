@@ -23,6 +23,7 @@ Configuration examples for DNSdist PowerDNS
 - Match domain queries using regular expressions [YAML](./yaml/routing_regex.yml) / [LUA](./lua/routing_regex.lua)
 - Tag DNS traffic and apply specific rules [YAML](./yaml/routing_tag_traffic.yml) / [LUA](./lua/routing_tag_traffic.lua)
 - Route traffic based on ECS (EDNS Client Subnet): [YAML](./yaml/routing_decode_ecs.yml) / [LUA](./lua/decode_ecs.lua)
+- Split resolution: [YAML](./yaml/routing_split_resolution.yml) / [LUA](./lua/routing_split_resolution.lua)
 - Read client source IP via Proxy Protocol and apply custom routing [YAML](./yaml/routing_read_proxyprotocol.yml) / [LUA](./lua/routing_read_ip_proxyprotocol.lua)
 - Add client source IP using Proxy Protocol [YAML](./yaml/routing_add_ip_proxyprotocol.yml) / [LUA](./lua/routing_add_proxyprotocol.lua)
 
@@ -71,7 +72,7 @@ Display logs
 
 ```bash
 sudo docker compose logs -f
-dnsdist 1.8.0 comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it according to the terms of the GPL version 2
+dnsdist 2.0.1 comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it according to the terms of the GPL version 2
 Added downstream server 1.1.1.1:53
 Listening on 0.0.0.0:53
 ACL allowing queries from: 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, ::1/128, fc00::/7, fe80::/10
