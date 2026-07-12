@@ -1,6 +1,6 @@
 services:
   dnsdist:
-    image: powerdns/dnsdist-20:2.0.1
+    image: powerdns/dnsdist-21:2.1.0
     volumes:
       - ./server.crt:/etc/dnsdist/cert.pem
       - ./server.key:/etc/dnsdist/key.pem
